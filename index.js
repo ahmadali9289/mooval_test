@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-const fetch = require("node-fetch");
 
 const github_api = require("./lib/github-api");
 
@@ -23,8 +22,24 @@ app.get("/", (req, res, next) => {
       return user;
     })
     .then((user) => {
-      return github_api(user.repos_url);
-    });
+      return github_api.get_github_public_repos(user.repos_url);
+    })
+    .then((repos) => {
+      return github_api.iterate_repos(repos);
+    })
+    .then((lang_urls) => {
+      return github_api.get_repos_langues(lang_urls);
+    })
+    .then((list_of_lang_user) => {
+      if (list_of_lang_user.length == 0) {
+        return github_api.use_fallback(fallback_lang);
+      }
+      return github_api.compare_languages(fallback_lang);
+    })
+    .then((data) => {
+      res.send(data);
+    })
+    .catch((err) => res.send("Error Occured" + err));
 });
 
 app.listen(3000, () => {
